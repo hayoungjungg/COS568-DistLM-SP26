@@ -1,4 +1,6 @@
-# COS 598D Project: Distributed Training of Language Models
+# COS 568: Systems and Machine Learning
+# Assignment 2: Distributed Training of Language Models
+
 
 ## Overview
 
