@@ -2,8 +2,6 @@
 # Assignment 2: Distributed Training of Language Models
 
 
-## Overview
-
 This assignment is designed to familiarize you with the basics of training language models with a toy example on a small scale. You will first get hands-on experience with fine-tuning pre-trained language models like BERT (implemented in PyTorch and Huggingface Transformers) on a single machine. Then, you will implement data parallelism, the most common paradigm of distributed training, using primitives from PyTorch Distributed and perform distributed training on multiple machines. You will understand the tradeoffs of different approaches of performing distributed training.
 
 
