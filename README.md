@@ -20,9 +20,23 @@ You may choose to either use GPUs or CPUs for this project. You are required to 
 The following setup process caters to CPU-only environments. Note that this assignment is best done if you have bare-metal access to your compute nodes (i.e. you can access the nodes using a terminal not through a Slurm scheduler). You can get access to CPU nodes on CloudLab -- for instructions on accessing CloudLab, see [cloudlab.md](cloudlab.md).
 
 - Create a fork of this repository and clone your own fork on all machines
-- Install software dependencies via apt: `sudo apt-get update ; sudo apt-get install htop dstat python3-pip`
-- Download the RTE dataset, one of the datasets within GLUE. You are only required to fine-tune on RTE in this assignment. This command downloads all datasets within GLUE: `cd $HOME ; mkdir glue_data ; cd cos598d ; python3 download_glue_data.py --data_dir $HOME/glue_data`
-- Optional: create a virtual environment (conda/venv) to install the following dependencies
+- Install software dependencies via apt (If you are using Della, you can skip this step): 
+  ```bash
+  sudo apt-get update
+  sudo apt-get install htop dstat python3-pip
+  ```
+- Download the RTE dataset, one of the datasets within GLUE. You are only required to fine-tune on RTE in this assignment. This command downloads all datasets within GLUE: 
+  ```bash
+  cd $HOME
+  mkdir glue_data
+  cd COS568-DistLM-SP25
+  python3 download_glue_data.py --data_dir $HOME/glue_data
+  ```
+- Optional: create a virtual environment (conda/venv) to install the following dependencies:
+  ```bash
+  conda create -n cos568 python=3.9
+  conda activate cos568
+  ```
 - Install CPU-only PyTorch: `pip install torch --index-url https://download.pytorch.org/whl/cpu`. If you are using GPUs, install the appropriate PyTorch [here](https://pytorch.org/get-started/locally/).
 - Install dependencies: `pip install numpy scipy scikit-learn tqdm pytorch_transformers`
 

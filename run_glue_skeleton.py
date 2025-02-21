@@ -131,7 +131,7 @@ def train(args, train_dataset, model, tokenizer):
                 torch.nn.utils.clip_grad_norm_(amp.master_params(optimizer), args.max_grad_norm)
             else:
                 ##################################################
-                # TODO(cos598d): perform backward pass here
+                # TODO(cos568): perform backward pass here
                 
                 ##################################################
                 torch.nn.utils.clip_grad_norm_(model.parameters(), args.max_grad_norm)
@@ -140,7 +140,7 @@ def train(args, train_dataset, model, tokenizer):
             if (step + 1) % args.gradient_accumulation_steps == 0:
                 scheduler.step()  # Update learning rate schedule
                 ##################################################
-                # TODO(cos598d): perform a single optimization step (parameter update) by invoking the optimizer
+                # TODO(cos568): perform a single optimization step (parameter update) by invoking the optimizer
                 
                 ##################################################
                 model.zero_grad()
@@ -154,7 +154,7 @@ def train(args, train_dataset, model, tokenizer):
             break
         
         ##################################################
-        # TODO(cos598d): call evaluate() here to get the model performance after every epoch.
+        # TODO(cos568): call evaluate() here to get the model performance after every epoch.
 
         ##################################################
 
@@ -386,7 +386,7 @@ def main():
     tokenizer = tokenizer_class.from_pretrained(args.tokenizer_name if args.tokenizer_name else args.model_name_or_path, do_lower_case=args.do_lower_case)
     
     ##################################################
-    # TODO(cos598d): load the model using from_pretrained. Remember to pass in `config` as an argument.
+    # TODO(cos568): load the model using from_pretrained. Remember to pass in `config` as an argument.
     # If you pass in args.model_name_or_path (e.g. "bert-base-cased"), the model weights file will be downloaded from HuggingFace.
 
     ##################################################
