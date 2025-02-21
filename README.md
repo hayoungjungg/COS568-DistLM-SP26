@@ -38,7 +38,7 @@ The following setup process caters to CPU-only environments. Note that this assi
   conda activate cos568
   ```
 - Install CPU-only PyTorch: `pip install torch --index-url https://download.pytorch.org/whl/cpu`. If you are using GPUs, install the appropriate PyTorch [here](https://pytorch.org/get-started/locally/).
-- Install dependencies: `pip install numpy scipy scikit-learn tqdm pytorch_transformers`
+- Install dependencies: `pip install numpy scipy scikit-learn tqdm pytorch_transformers apex`
 
 
 ## Part 1: Fine-tuning BERT on GLUE Datasets on a Single Node
