@@ -45,7 +45,7 @@ The following setup process caters to CPU-only environments. Note that this assi
 
 We have provided a base script ([`run_glue_skeleton.py`](run_glue_skeleton.py)) for you to get started, which provides some model/dataset setup and training setup to fine-tune BERT-base on the RTE dataset. The base script bakes in a handful of optimizations such as mixed-precision training and gradient accumulation -- we will not be needing them, and you can ignore the related code. We also provide `utils_glue.py` which includes some helper functions.
 
-Here is a command you can use to run `run_glue.py`:
+Here is a command you can use to run `run_glue.py` (remember renaming the `run_glue_skeleton.py` to `run_glue.py` after adding the necessary code):
 
 ```shell
 export GLUE_DIR=$HOME/glue_data
