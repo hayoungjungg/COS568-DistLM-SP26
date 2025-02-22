@@ -20,7 +20,7 @@ You may choose to either use GPUs or CPUs for this project. You are required to 
 The following setup process caters to CPU-only environments. Note that this assignment is best done if you have bare-metal access to your compute nodes (i.e. you can access the nodes using a terminal not through a Slurm scheduler). You can get access to CPU nodes on CloudLab -- for instructions on accessing CloudLab, see [cloudlab.md](cloudlab.md).
 
 - Create a fork of this repository and clone your own fork on all machines
-- Install software dependencies via apt (If you are using Della, you can skip this step): 
+- Install software dependencies via apt: 
   ```bash
   sudo apt-get update
   sudo apt-get install htop dstat python3-pip
@@ -37,7 +37,9 @@ The following setup process caters to CPU-only environments. Note that this assi
   conda create -n cos568 python=3.9
   conda activate cos568
   ```
-- Install CPU-only PyTorch: `pip install torch --index-url https://download.pytorch.org/whl/cpu`. If you are using GPUs, install the appropriate PyTorch [here](https://pytorch.org/get-started/locally/).
+- Install PyTorch (2.5.0): 
+  - For CPU use: `pip install torch==2.5.0 torchvision==0.20.0 torchaudio==2.5.0 --index-url https://download.pytorch.org/whl/cpu`. 
+  - If you are using GPUs, install the appropriate PyTorch [here](https://pytorch.org/get-started/locally/).
 - Install dependencies: `pip install numpy scipy scikit-learn tqdm pytorch_transformers apex`
 
 
