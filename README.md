@@ -38,14 +38,14 @@ The following setup process caters to CPU-only environments. Note that this assi
   conda activate cos568
   ```
 - Install CPU-only PyTorch: `pip install torch --index-url https://download.pytorch.org/whl/cpu`. If you are using GPUs, install the appropriate PyTorch [here](https://pytorch.org/get-started/locally/).
-- Install dependencies: `pip install numpy scipy scikit-learn tqdm pytorch_transformers`
+- Install dependencies: `pip install numpy scipy scikit-learn tqdm pytorch_transformers apex`
 
 
 ## Part 1: Fine-tuning BERT on GLUE Datasets on a Single Node
 
 We have provided a base script ([`run_glue_skeleton.py`](run_glue_skeleton.py)) for you to get started, which provides some model/dataset setup and training setup to fine-tune BERT-base on the RTE dataset. The base script bakes in a handful of optimizations such as mixed-precision training and gradient accumulation -- we will not be needing them, and you can ignore the related code. We also provide `utils_glue.py` which includes some helper functions.
 
-Here is a command you can use to run `run_glue.py`:
+Here is a command you can use to run `run_glue.py` (remember to rename the `run_glue_skeleton.py` to `run_glue.py` after adding the necessary code):
 
 ```shell
 export GLUE_DIR=$HOME/glue_data
@@ -62,11 +62,11 @@ python3 run_glue.py \
   --per_gpu_train_batch_size 64 \
   --learning_rate 2e-5 \
   --num_train_epochs 3 \
-  --output_dir /tmp/$TASK_NAME/ \
+  --output_dir ./tmp/$TASK_NAME/ \
   --overwrite_output_dir
 ```
 
-**Task 1:** Load the pretrained BERT-base model from Huggingface and fill in the standard training loop of a minibatch – forward pass (already implemented), backward pass, loss computation (already implemented), and parameter updates (via optimizer step). Record the loss values of the first five minibatches by printing the loss value after every iteration. Afterward, run training for 3 epochs (an epoch is a complete pass over a dataset -- when doing fine-tuning, we typically only need a small number of epochs) with batch size 64 and the default hyperparameters. All required code changes are marked with `TODO(cos598d)` comments. 
+**Task 1:** Load the pretrained BERT-base model from Huggingface and fill in the standard training loop of a minibatch – forward pass (already implemented), backward pass, loss computation (already implemented), and parameter updates (via optimizer step). Record the loss values of the first five minibatches by printing the loss value after every iteration. Afterward, run training for 3 epochs (an epoch is a complete pass over a dataset -- when doing fine-tuning, we typically only need a small number of epochs) with batch size 64 and the default hyperparameters. All required code changes are marked with `TODO(cos568)` comments. 
 
 There are several examples for training that describe these four steps. Some good resources include the [PyTorch examples repository](https://github.com/pytorch/examples) and the [Pytorch tutorials](https://pytorch.org/tutorials/beginner/blitz/cifar10_tutorial.html). This script is also a starting point for later parts of the assignment. Familiarize yourself with the script and run training on a single machine.
 
