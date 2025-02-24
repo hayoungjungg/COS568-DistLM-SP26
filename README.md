@@ -15,9 +15,9 @@ This assignment is designed to familiarize you with the basics of training langu
 
 ## Environment Setup
 
-You may choose to either use GPUs or CPUs for this project (**Using CPUs via Cloudlab is highly recommended and our codebase is only validated on Cloudlab**). You are required to use up to 4 nodes in this assignment, and the nodes should be able to communicate with each other through a network interface. The nodes should have at least ~12 GB of RAM (in case of CPU training) or GPU memory (in case of GPU training) and at least ~10G of disk space.
+You may choose to either use GPUs or CPUs for this project (**Using CPUs via CloudLab is highly recommended and our codebase is only validated on CloudLab**). You are required to use up to 4 nodes in this assignment, and the nodes should be able to communicate with each other through a network interface. The nodes should have at least ~12 GB of RAM (in case of CPU training) or GPU memory (in case of GPU training) and at least ~10G of disk space.
 
-**The following setup process caters to CPU-only environments.** Note that this assignment is best done if you have bare-metal access to your compute nodes (i.e. you can access the nodes using a terminal not through a Slurm scheduler). **We highly recommend you to use CPU nodes on CloudLab** -- for instructions on accessing CloudLab, see [cloudlab.md](cloudlab.md).
+**The following setup process caters to CPU-only environments.** Note that this assignment is best done if you have bare-metal access to your compute nodes (i.e. you can access the nodes using a terminal not through a Slurm scheduler). **We highly recommend you use CPU nodes on CloudLab** -- For instructions on accessing CloudLab, see [cloudlab.md](cloudlab.md).
 
 - Create a fork of this repository and clone your own fork on all machines, please clone your repo on the path that is shared across all the nodes (e.g. `/proj/cos568proj2-PG0/groups/${your_net_id}`). **Again, please read [cloudlab.md](cloudlab.md) carefully before you clone the repo and start the experiments!**
 - Install software dependencies via apt and install pip dependencies **for each node**: 
