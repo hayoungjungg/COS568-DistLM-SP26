@@ -7,7 +7,7 @@ This assignment is designed to familiarize you with the basics of training langu
 
 ## Learning Outcomes
 
-- Load a pretrained language model from Huggingface and fine-tune it on GLUE datasets
+- Load a pretrained language model from Huggingface and fine-tune it on RTE datasets
 - Write distributed training applications with PyTorch distributed
 - Understand the trade-off between different methods of performing distributed training
 - Describe how ML frameworks (PyTorch) interact with lower-level communication frameworks (e.g. OpenMPI, Gloo, and NCCL)
