@@ -70,7 +70,7 @@ def set_seed(args):
 def train(args, train_dataset, model, tokenizer):
     """ Train the model """
 
-    args.train_batch_size = args.per_gpu_train_batch_size
+    args.train_batch_size = args.per_device_train_batch_size
     train_sampler = RandomSampler(train_dataset)
     train_dataloader = DataLoader(train_dataset, sampler=train_sampler, batch_size=args.train_batch_size)
 
@@ -99,7 +99,7 @@ def train(args, train_dataset, model, tokenizer):
     logger.info("***** Running training *****")
     logger.info("  Num examples = %d", len(train_dataset))
     logger.info("  Num Epochs = %d", args.num_train_epochs)
-    logger.info("  Instantaneous batch size per GPU = %d", args.per_gpu_train_batch_size)
+    logger.info("  Instantaneous batch size per GPU = %d", args.per_device_train_batch_size)
     logger.info("  Total train batch size (w. parallel, distributed & accumulation) = %d",
                    args.train_batch_size * args.gradient_accumulation_steps * (torch.distributed.get_world_size() if args.local_rank != -1 else 1))
     logger.info("  Gradient Accumulation steps = %d", args.gradient_accumulation_steps)
@@ -131,18 +131,18 @@ def train(args, train_dataset, model, tokenizer):
                 torch.nn.utils.clip_grad_norm_(amp.master_params(optimizer), args.max_grad_norm)
             else:
                 ##################################################
-                # TODO(cos568): perform backward pass here
+                # TODO(cos568): perform backward pass here (expected one line of code)
                 
                 ##################################################
                 torch.nn.utils.clip_grad_norm_(model.parameters(), args.max_grad_norm)
 
             tr_loss += loss.item()
             if (step + 1) % args.gradient_accumulation_steps == 0:
-                scheduler.step()  # Update learning rate schedule
                 ##################################################
-                # TODO(cos568): perform a single optimization step (parameter update) by invoking the optimizer
+                # TODO(cos568): perform a single optimization step (parameter update) by invoking the optimizer (expected one line of code)
                 
                 ##################################################
+                scheduler.step() # Update learning rate schedule
                 model.zero_grad()
                 global_step += 1
 
@@ -154,7 +154,7 @@ def train(args, train_dataset, model, tokenizer):
             break
         
         ##################################################
-        # TODO(cos568): call evaluate() here to get the model performance after every epoch.
+        # TODO(cos568): call evaluate() here to get the model performance after every epoch. (expected one line of code)
 
         ##################################################
 
@@ -173,7 +173,7 @@ def evaluate(args, model, tokenizer, prefix=""):
         if not os.path.exists(eval_output_dir) and args.local_rank in [-1, 0]:
             os.makedirs(eval_output_dir)
 
-        args.eval_batch_size = args.per_gpu_eval_batch_size
+        args.eval_batch_size = args.per_device_eval_batch_size
         # Note that DistributedSampler samples randomly
         eval_sampler = SequentialSampler(eval_dataset)
         eval_dataloader = DataLoader(eval_dataset, sampler=eval_sampler, batch_size=args.eval_batch_size)
@@ -309,9 +309,9 @@ def main():
     parser.add_argument("--do_lower_case", action='store_true',
                         help="Set this flag if you are using an uncased model.")
 
-    parser.add_argument("--per_gpu_train_batch_size", default=8, type=int,
+    parser.add_argument("--per_device_train_batch_size", default=8, type=int,
                         help="Batch size per GPU/CPU for training.")
-    parser.add_argument("--per_gpu_eval_batch_size", default=8, type=int,
+    parser.add_argument("--per_device_eval_batch_size", default=8, type=int,
                         help="Batch size per GPU/CPU for evaluation.")
     parser.add_argument('--gradient_accumulation_steps', type=int, default=1,
                         help="Number of updates steps to accumulate before performing a backward/update pass.")
@@ -387,7 +387,7 @@ def main():
     
     ##################################################
     # TODO(cos568): load the model using from_pretrained. Remember to pass in `config` as an argument.
-    # If you pass in args.model_name_or_path (e.g. "bert-base-cased"), the model weights file will be downloaded from HuggingFace.
+    # If you pass in args.model_name_or_path (e.g. "bert-base-cased"), the model weights file will be downloaded from HuggingFace. (expected one line of code)
 
     ##################################################
 
