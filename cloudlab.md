@@ -18,8 +18,8 @@ To start a new experiment, go to your CloudLab dashboard and click on the `Exper
 ## Storage
 
 CloudLab has two storage systems, including:
-1. A non-shared local storage system that is only accessible to the node you logged in (i.e. your home directory `/home`). For example, if you are allocated 4 nodes in the experiments, each node has an independent `/home` directory that is not shared with other nodes.
-2. A shared NFS system that is accessible for **all nodes** inside the project (i.e. the directory starts with `/proj/cos568proj2-PG0`). This means **everyone** can access the file inside this directory. This directory has 100G disk space **in total**.
+1. A non-shared, ephemeral (which means the data will be removed after the experiment ends) local storage system that is only accessible to the node you logged in (i.e. your home directory `/home`). For example, if you are allocated 4 nodes in the experiments, each node has an independent `/home` directory that is not shared with other nodes.
+2. A shared, persistent (which means the data will be kept after the experiment ends) NFS system that is accessible for **all nodes** inside the project (i.e. the directory starts with `/proj/cos568proj2-PG0`). This means **everyone** can access the file inside this directory. This directory has 100G disk space **in total**.
 3. You can check the disk hierarchy using `df -h`
 
 [**!!!IMPORTANT!!!**]
