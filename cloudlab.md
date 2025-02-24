@@ -8,7 +8,7 @@ Most importantly, it introduces our policies on using CloudLab for this project.
 
 ## Register a CloudLab Account
 
-To register an account, please visit [http://cloudlab.us](http://cloudlab.us) and create an account using your Princeton email address as login. Note that an SSH public key is required to access the nodes CloudLab assigns to you; if you are unfamiliar with creating and using ssh keypairs, we recommend taking a look at the first few steps in [GitHub’s guide to generating SSH keys](https://docs.github.com/en/authentication/connecting-to-github-with-ssh). (Obviously, the steps about how to upload the keypair into GitHub don’t apply to CloudLab.) Use this [link](https://www.cloudlab.us/signup.php?pid=cos568proj2) to join project `cos568proj2`.
+Use this [link](https://www.cloudlab.us/signup.php?pid=cos568proj2) to register and join project `cos568proj2`. Please use your Princeton email address for registration. Note that an SSH public key is required to access the nodes CloudLab assigns to you; if you are unfamiliar with creating and using ssh keypairs, we recommend taking a look at the first few steps in [GitHub’s guide to generating SSH keys](https://docs.github.com/en/authentication/connecting-to-github-with-ssh). (Obviously, the steps about how to upload the keypair into GitHub don’t apply to CloudLab.) 
 
 ## Start an Experiment
 
