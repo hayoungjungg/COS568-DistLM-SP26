@@ -36,7 +36,8 @@ To run experiments efficiently, we suggest to follow the workflow below:
     pip install numpy scipy scikit-learn tqdm pytorch_transformers apex
    ```
 
-3. (Only need to run one time) Create the path `/proj/cos568proj2-PG0/groups/${your_net_id}` and clone the repo to this path. Please keep in mind that we have 60 people to share 100G space, so please make sure to only store your git repo in this directory, and store large temp files like output files and model checkpoints in your `/home`  or `/tmp` directory. 
+3. (Only need to run one time) Create the path `/proj/cos568proj2-PG0/groups/${your_net_id}` and clone the repo to this path. Please keep in mind that we have 60 people to share 100G space, so please make sure to only store your git repo in this directory, and store large temp files like output files and model checkpoints in your `/home`  or `/tmp` directory.
+4. GLUE/RTE data has been downloaded in `/proj/cos568proj2-PG0/glue_data`. To save disk space, please don't re-download it in the shared directory.
 
 
 ## Policies on Using CloudLab Resources
