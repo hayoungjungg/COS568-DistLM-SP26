@@ -14,6 +14,20 @@ To register an account, please visit [http://cloudlab.us](http://cloudlab.us) an
 
 To start a new experiment, go to your CloudLab dashboard and click on the `Experiments` tab in the upper left corner, then select `Start Experiment`. This will lead to the profile selection panel. Click on `Change Profile`, and select a profile from the list. For example, if you choose the `cos568` profile in the `cos568proj2` project, you will be able to launch 4 CPU nodes. Select the profile and click on Next to move to the next panel. Here you should name your experiment with `NetID-ExperimentName`. The purpose of doing this is to prevent everyone from picking random names and ending up confusing each other since everyone in the `cos568proj2` project can see a full list of experiments created. You also need to specify from which cluster you want to start your experiment. Each cluster has different hardware. For more information on the hardware CloudLab provides, please refer to [this doc](https://docs.cloudlab.us/hardware.html). Once you select the cluster you can instantiate the experiment. Once the experiment is ready you will see the ssh login command. Try to log in to the machine and check for the number of CPU cores available and memory available on the node using `htop` (You might need to install htop first by running `sudo apt-get update ; sudo apt-get install htop`).
 
+
+## Storage
+
+CloudLab has two storage systems, including:
+1. A non-shared local storage system that is only accessible to the node you logged in (i.e. your home directory `/home`). For example, if you are allocated 4 nodes in the experiments, each node has an independent `/home` directory that is not shared with other nodes.
+2. A shared NFS system that is accessible for **all nodes** inside the project (i.e. the directory starts with `/proj/cos568proj2-PG0`). This means **everyone** can access the file inside this directory. This directory has 100G disk space **in total**.
+
+[IMPORTANT]
+To run experiments efficiently, below are our suggested workflow
+1. Request an experiment (each experiment will last for 16 hours at maximum)
+2. For each node, initialize the system using the script
+3. Create the path `/proj/cos568proj2-PG0/groups/${your_net_id}` and clone the repo to this path. But always store large temp files like output files, and model checkpoints in your `/home` directory.
+
+
 ## Policies on Using CloudLab Resources
 
 The nodes you receive from CloudLab are real hardware machines sitting in different clusters. Therefore, we ask you not to hold the nodes for too long. CloudLab gives users 16 hours to start with, and users can extend it for a longer time. Manage your time efficiently and only hold onto those nodes when you are working on the assignment. You should use a private git repository to manage your code, and you must terminate the nodes when you are not using them. If you do have a need to extend the nodes, do not extend them by more than 1 day. We will terminate any cluster running for more than 48 hours.
