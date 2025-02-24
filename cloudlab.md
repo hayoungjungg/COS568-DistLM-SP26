@@ -20,15 +20,27 @@ To start a new experiment, go to your CloudLab dashboard and click on the `Exper
 CloudLab has two storage systems, including:
 1. A non-shared local storage system that is only accessible to the node you logged in (i.e. your home directory `/home`). For example, if you are allocated 4 nodes in the experiments, each node has an independent `/home` directory that is not shared with other nodes.
 2. A shared NFS system that is accessible for **all nodes** inside the project (i.e. the directory starts with `/proj/cos568proj2-PG0`). This means **everyone** can access the file inside this directory. This directory has 100G disk space **in total**.
+3. You can check the disk hierarchy using `df -h`
 
-[IMPORTANT]
-To run experiments efficiently, below are our suggested workflow
-1. Request an experiment (each experiment will last for 16 hours at maximum)
-2. For each node, initialize the system using the script
-3. Create the path `/proj/cos568proj2-PG0/groups/${your_net_id}` and clone the repo to this path. But always store large temp files like output files, and model checkpoints in your `/home` directory.
+[**!!!IMPORTANT!!!**]
+To run experiments efficiently, we suggest to follow the workflow below:
+1. Start an experiment (each experiment will last for 16 hours at maximum)
+2. (Need to run every time when you start a new experiment) For each node, initialize the system using the script :
+   ```bash
+    sudo apt-get update
+    sudo apt-get install htop dstat python3-pip
+    echo 'export PATH=$HOME/.local/bin:$PATH' >> ~/.bashrc
+    source ~/.bashrc
+    
+    pip install torch==2.5.0 torchvision==0.20.0 torchaudio==2.5.0 --index-url https://download.pytorch.org/whl/cpu
+    pip install numpy scipy scikit-learn tqdm pytorch_transformers apex
+   ```
+
+3. (Only need to run one time) Create the path `/proj/cos568proj2-PG0/groups/${your_net_id}` and clone the repo to this path. Please keep in mind that we have 60 people to share 100G space, so please make sure to only store your git repo in this directory, and store large temp files like output files and model checkpoints in your `/home`  or `/tmp` directory. 
 
 
 ## Policies on Using CloudLab Resources
 
 The nodes you receive from CloudLab are real hardware machines sitting in different clusters. Therefore, we ask you not to hold the nodes for too long. CloudLab gives users 16 hours to start with, and users can extend it for a longer time. Manage your time efficiently and only hold onto those nodes when you are working on the assignment. You should use a private git repository to manage your code, and you must terminate the nodes when you are not using them. If you do have a need to extend the nodes, do not extend them by more than 1 day. We will terminate any cluster running for more than 48 hours.
+
 As a member of the `cos568proj2` project, you have permission to access another member’s private user space. Stick to your own space and do not access others’ to peek at/copy/use their code, or intentionally/unintentionally overwrite files in others’ workspaces. For more information related to this, please refer to [https://odoc.princeton.edu/learning-curriculum/academic-integrity](https://odoc.princeton.edu/learning-curriculum/academic-integrity).
