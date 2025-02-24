@@ -31,11 +31,11 @@ You may choose to either use GPUs or CPUs for this project (**Using CPUs via Clo
   pip install numpy scipy scikit-learn tqdm pytorch_transformers apex
   ```
   - If you are using GPUs, install the appropriate PyTorch [here](https://pytorch.org/get-started/locally/).
-- Download the RTE dataset, one of the datasets within GLUE. You are only required to fine-tune on RTE in this assignment. This command downloads all datasets within GLUE: 
-  ```bash
-  mkdir glue_data
-  python3 download_glue_data.py --data_dir glue_data
-  ```
+-  You are only required to fine-tune RTE  (one of the datasets within GLUE) in this assignment, which has been downloaded in `/proj/cos568proj2-PG0/glue_data`. If you are not running experiments via CloudLab, use this command to download datasets within GLUE: 
+    ```bash
+    mkdir glue_data
+    python3 download_glue_data.py --data_dir glue_data
+    ```
 
 
 ## Part 1: Fine-tuning BERT on GLUE Datasets on a Single Node
@@ -45,7 +45,7 @@ We have provided a base script ([`run_glue_skeleton.py`](run_glue_skeleton.py)) 
 Here is a command you can use to run `run_glue.py` (remember to rename the `run_glue_skeleton.py` to `run_glue.py` after adding the necessary code):
 
 ```shell
-export GLUE_DIR=glue_data
+export GLUE_DIR=/proj/cos568proj2-PG0/glue_data
 export TASK_NAME=RTE
 
 python3 run_glue.py \
