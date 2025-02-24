@@ -19,7 +19,7 @@ You may choose to either use GPUs or CPUs for this project (**Using CPUs via Clo
 
 **The following setup process caters to CPU-only environments.** Note that this assignment is best done if you have bare-metal access to your compute nodes (i.e. you can access the nodes using a terminal not through a Slurm scheduler). **We highly recommend you to use CPU nodes on CloudLab** -- for instructions on accessing CloudLab, see [cloudlab.md](cloudlab.md).
 
-- Create a fork of this repository and clone your own fork on all machines, please clone you repo on the path that are shared across all the nodes (e.g. `/proj/cos568proj2-PG0`)
+- Create a fork of this repository and clone your own fork on all machines, please clone your repo on the path that is shared across all the nodes (e.g. `/proj/cos568proj2-PG0/groups/${your_net_id}`)
 - Install software dependencies via apt and install pip dependencies **for each node**: 
   ```bash
   sudo apt-get update
