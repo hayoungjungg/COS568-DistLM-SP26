@@ -136,7 +136,7 @@ python run_glue.py [other input args] --master_ip $ip_address$ --master_port $po
 
 - **Testing programs:** We suggest you write small programs to test the functionality of communication collectives at first. For example, create a tensor and send it to another node. Next, try to perform all reduce on it. This will help you get comfortable with communication collectives.
 
-- **Setting up distributed init:** In this setup we will use the TCP init method “tcp://10.10.1.1:6585”. Instead of a shared file system, we want to use TCP to communicate. In this example, we use `10.10.1.1` as the IP address for rank 0. You can use `ifconfig` to find the IP address of your nodes. On CloudLab, please use the experimental network, which listens on `10.10.1.*` interfaces (sending a huge amount of traffic through the other network interfaces may lead to your reservation getting terminated by the CloudLab admins). You can double-check network connectivity by `ping`ing a node from another. The port has to be a non-privileged port, i.e. greater than 1023.
+- **Setting up distributed init:** Instead of a shared file system, we want to use TCP to init and communicate. You can use `ifconfig` to find the IP address of your nodes. On CloudLab, please use the experimental network, which listens on `10.10.1.*` interfaces (sending a huge amount of traffic through the other network interfaces may lead to your reservation getting terminated by the CloudLab admins). You can double-check network connectivity by `ping`ing a node from another. The port has to be a non-privileged port, i.e. greater than 1023.
 
   An example of `torch.distributed.init_prcess_group()` for CloudLab:
   ```python
