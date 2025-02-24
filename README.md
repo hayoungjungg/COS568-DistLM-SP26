@@ -24,6 +24,8 @@ The following setup process caters to CPU-only environments. Note that this assi
   ```bash
   sudo apt-get update
   sudo apt-get install htop dstat python3-pip
+  echo 'export PATH=$HOME/.local/bin:$PATH' >> ~/.bashrc
+  source ~/.bashrc
   ```
 - Download the RTE dataset, one of the datasets within GLUE. You are only required to fine-tune on RTE in this assignment. This command downloads all datasets within GLUE: 
   ```bash
