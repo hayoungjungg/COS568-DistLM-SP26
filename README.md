@@ -59,7 +59,7 @@ python3 run_glue.py \
   --per_device_train_batch_size 64 \
   --learning_rate 2e-5 \
   --num_train_epochs 3 \
-  --output_dir ./tmp/$TASK_NAME/ \
+  --output_dir /tmp/$TASK_NAME/ \
   --overwrite_output_dir
 ```
 
@@ -70,7 +70,7 @@ There are several examples for training that describe these four steps. Some goo
 
 ## Part 2: Distributed Data Parallel Training
 
-Next, you will modify the script used in Part 1 to enable distributed data parallel training. There are primarily two ways distributed training is performed: i) Data Parallel, ii) Model Parallel. In the case of Data parallel, each of the participating workers trains the same network, but on different data points from the dataset. After each iteration (forward and backward pass), the workers average their local gradients to come up with a single update. In model parallel training, the model is partitioned among a number of workers. Each worker performs training on part of the model and sends its output to the worker which has the next partition during the forward pass and vice-versa in the backward pass. Model parallel is usually used when the size of the network is very large and doesn’t fit on a single worker. In this assignment, we solely focus on Data Parallel Training. For more information about parallelism in ML, see the FAQs. For data parallel training, you will need to partition the data among other nodes. Look at the FAQs to find details on how to partition the data.
+Next, you will modify the script used in Part 1 to enable distributed data-parallel training. There are primarily two ways distributed training is performed: i) Data Parallel, ii) Model Parallel. In the case of Data parallel, each of the participating workers trains the same network, but on different data points from the dataset. After each iteration (forward and backward pass), the workers average their local gradients to come up with a single update. In model parallel training, the model is partitioned among a number of workers. Each worker performs training on part of the model and sends its output to the worker which has the next partition during the forward pass and vice-versa in the backward pass. Model parallel is usually used when the size of the network is very large and doesn’t fit on a single worker. In this assignment, we solely focus on Data Parallel Training. For more information about parallelism in ML, see the FAQs. For data parallel training, you will need to partition the data among other nodes. Look at the FAQs to find details on how to partition the data.
 
 To understand more about the communication primitives in ML, please refer to these two articles: [PyTorch documentation](https://pytorch.org/tutorials/intermediate/dist_tuto.html#collective-communication), [NCCL documentation](https://docs.nvidia.com/deeplearning/nccl/user-guide/docs/usage/collectives.html). We will be using `gather`, `scatter`, and `all_reduce` in this assignment.
 
@@ -85,6 +85,12 @@ We will do the following:
 3. Finally, to perform gradient aggregation, you will need to use `torch.distributed.gather` and `torch.distributed.scatter` communication collectives. Specifically, worker 0 (with rank 0) in the group will gather the gradients from all the participating workers, perform element-wise averaging, and then scatter the mean vector to all workers. The workers update the `grad` variable with the received vector and then continue training. 
 
 **Task 2(a):** Implement gradient synchronization using `torch.distributed.gather` and `torch.distributed.scatter` in `gloo` or `nccl`. Verify that you are using the same total batch size, where total batch size = batch size on one worker * number of workers. With the same total batch size and the same seed, you should get similar loss values as in the single-node training case. Remember that you trained with a total batch size of 64 in Task 1.
+
+[Hint] To start a distributed training job, you need to start the program on each node by running something like 
+```shell
+python run_glue.py [other input args] --master_ip $ip_address$ --master_port $port$ --world_size 4 --local_rank $rank$
+```
+Here `local_rank=0, 1, 2, 3`, which corresponds to your node ID. We recommend using `tmux` to keep the session persistent.
 
 
 ### Part 2(b): Gradient Synchronization with all_reduce
