@@ -123,7 +123,7 @@ In the report, include the following content:
 - Comment on the scalability of distributed ML based on your results.
 - [Optional] If you chose to do task 4, include a comparison of the network traffic in different setups and your reasoning of the differences.
 - Provide any implementation details.
-- Code for each task should be in different directories: `task2a`, `task2b`, and `task3`.
+- Code for each task should be in different directories: `task1`, `task2a`, `task2b`, and `task3`.
 - All your code that requires PyTorch distributed should be runnable using the following command:
 
 ```shell
