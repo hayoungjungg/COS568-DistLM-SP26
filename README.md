@@ -114,7 +114,7 @@ In this optional section, your task is to benchmark and profile the communicatio
 
 ## Deliverables
 
-A *brief* report in PDF format (filename: `$NetID$_$firstname$_$lastname$.pdf`) and the code for each task. Please compress your source code into a .zip file and upload it to Gradescope.
+A *brief* report in PDF format (filename: `$NetID$_$firstname$_$lastname$.pdf`) and the code for each task. Please compress your source code into a .zip file and upload it to Canvas.
 
 In the report, include the following content:
 - Task 1: Run experiements for 3 epochs and report the evaluation metric after every epoch.
