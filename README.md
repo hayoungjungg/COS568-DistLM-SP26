@@ -130,6 +130,7 @@ In the report, include the following content:
 ```shell
 python run_glue.py [other input args] --master_ip $ip_address$ --master_port $port$ --world_size 4 --local_rank $rank$
 ```
+- Late days policy: Late assignments are assessed a penalty equal to 10% of the possible points on the assignment per day (or partial day) late. And we accept up to 5 late days in Assignment 2.
 
 
 ## Common FAQs and Resources
