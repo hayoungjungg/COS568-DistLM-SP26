@@ -22,6 +22,7 @@ import glob
 import logging
 import os
 import random
+import time
 
 import numpy as np
 import torch
@@ -166,11 +167,33 @@ def train(args, train_dataset, model, tokenizer):
     tr_loss, logging_loss = 0.0, 0.0
     model.zero_grad()
     set_seed(args)  # Added here for reproductibility (even between python 2 and 3)
+
+    # Timing: discard first iteration, report average time per iteration (see https://realpython.com/python-timer/)
+    iteration_times = []
+    batch_counter = 0
+    rank_for_log = args.local_rank
+    loss_curve_path = os.path.join(args.output_dir, "loss_curve_rank{}.tsv".format(rank_for_log))
+    loss_curve_file = None
+    loss_curve_all_file = None  # rank 0 only: one file with loss from all nodes
+    if args.output_dir:
+        os.makedirs(args.output_dir, exist_ok=True)
+        loss_curve_file = open(loss_curve_path, "w")
+        loss_curve_file.write("batch\tloss\n")
+        if args.local_rank in [-1, 0]:
+            loss_curve_all_path = os.path.join(args.output_dir, "loss_curve_all_nodes.tsv")
+            loss_curve_all_file = open(loss_curve_all_path, "w")
+            if args.local_rank != -1:
+                loss_curve_all_file.write("batch\t" + "\t".join("loss_rank{}".format(r) for r in range(args.world_size)) + "\n")
+            else:
+                loss_curve_all_file.write("batch\tloss\n")
+
     for epoch in range(int(args.num_train_epochs)):
         if args.local_rank != -1:
             train_sampler.set_epoch(epoch)
         epoch_iterator = tqdm(train_dataloader, desc="Iteration", disable=args.local_rank not in [-1, 0])
         for step, batch in enumerate(epoch_iterator):
+            if step % args.gradient_accumulation_steps == 0:
+                t_iter_start = time.perf_counter()
             model.train()
             batch = tuple(t.to(args.device) for t in batch)
             inputs = {'input_ids':      batch[0],
@@ -202,12 +225,27 @@ def train(args, train_dataset, model, tokenizer):
             torch.nn.utils.clip_grad_norm_(model.parameters(), args.max_grad_norm)
 
             tr_loss += loss.item()
+            if loss_curve_file is not None:
+                batch_counter += 1
+                loss_curve_file.write("{}\t{:.6f}\n".format(batch_counter, loss.item()))
+                # In distributed mode, gather all nodes' losses so rank 0 can log all four in one file
+                if args.local_rank != -1:
+                    loss_t = torch.tensor([loss.item()], dtype=torch.float64)
+                    gathered = [torch.zeros(1, dtype=torch.float64) for _ in range(args.world_size)]
+                    dist.all_gather(gathered, loss_t)
+                    if loss_curve_all_file is not None:
+                        loss_curve_all_file.write("{}\t".format(batch_counter) + "\t".join("{:.6f}".format(g.item()) for g in gathered) + "\n")
+                elif loss_curve_all_file is not None:
+                    loss_curve_all_file.write("{}\t{:.6f}\n".format(batch_counter, loss.item()))
             if (step + 1) % args.gradient_accumulation_steps == 0:
                 ##################################################
                 # TODO(cos568): perform a single optimization step (parameter update) by invoking the optimizer (expect one line of code)
                 optimizer.step()
                 ##################################################
-                scheduler.step() # Update learning rate schedule
+                elapsed = time.perf_counter() - t_iter_start
+                if global_step > 1:
+                    iteration_times.append(elapsed)
+                scheduler.step()  # Update learning rate schedule
                 model.zero_grad()
                 global_step += 1
 
@@ -221,6 +259,18 @@ def train(args, train_dataset, model, tokenizer):
         # TODO(cos568): call evaluate() here to get the model performance after every epoch. (expect one line of code)
         evaluate(args, model, tokenizer, prefix="epoch-num-{}".format(epoch + 1))
         ##################################################
+
+    if loss_curve_file is not None:
+        loss_curve_file.close()
+    if loss_curve_all_file is not None:
+        loss_curve_all_file.close()
+    if iteration_times:
+        avg_time = sum(iteration_times) / len(iteration_times)
+        logger.info("Average time per iteration (excluding first): %.4f seconds", avg_time)
+        timing_path = os.path.join(args.output_dir, "timing_rank{}.txt".format(rank_for_log))
+        with open(timing_path, "w") as f:
+            f.write("average_time_per_iteration_seconds\t{:.4f}\n".format(avg_time))
+            f.write("num_iterations_timed\t{}\n".format(len(iteration_times)))
 
     return global_step, tr_loss / global_step
 
@@ -279,12 +329,15 @@ def evaluate(args, model, tokenizer, prefix=""):
         result = compute_metrics(eval_task, preds, out_label_ids)
         results.update(result)
 
-        output_eval_file = os.path.join(eval_output_dir, "eval_results.txt")
-        with open(output_eval_file, "w") as writer:
-            logger.info("***** Eval results {} *****".format(prefix))
-            for key in sorted(result.keys()):
-                logger.info("  %s = %s", key, str(result[key]))
-                writer.write("%s = %s\n" % (key, str(result[key])))
+        # Only rank 0 writes eval results (other ranks may not have output_dir on local /tmp in multi-node)
+        if args.local_rank in [-1, 0]:
+            os.makedirs(eval_output_dir, exist_ok=True)
+            output_eval_file = os.path.join(eval_output_dir, "eval_results.txt")
+            with open(output_eval_file, "w") as writer:
+                logger.info("***** Eval results {} *****".format(prefix))
+                for key in sorted(result.keys()):
+                    logger.info("  %s = %s", key, str(result[key]))
+                    writer.write("%s = %s\n" % (key, str(result[key])))
 
     return results
 
@@ -387,8 +440,8 @@ def main():
                         help="Epsilon for Adam optimizer.")
     parser.add_argument("--max_grad_norm", default=1.0, type=float,
                         help="Max gradient norm.")
-    parser.add_argument("--num_train_epochs", default=3.0, type=float,
-                        help="Total number of training epochs to perform.")
+    parser.add_argument("--num_train_epochs", default=1.0, type=float,
+                        help="Total number of training epochs (use 1 for tasks 2a/2b/3).")
     parser.add_argument("--max_steps", default=-1, type=int,
                         help="If > 0: set total number of training steps to perform. Override num_train_epochs.")
     parser.add_argument("--warmup_steps", default=0, type=int,
