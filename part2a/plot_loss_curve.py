@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Plot loss curves from loss_curve_all_nodes_2b.tsv (e.g. from /tmp/RTE/ or /tmp/Rte).
+Plot loss curves from loss_curve_all_nodes.tsv (e.g. from /tmp/RTE/ or /tmp/Rte).
 Usage: python plot_loss_curve.py [path_to_tsv]
-  Default path: /tmp/Rte/loss_curve_all_nodes_2b.tsv
+  Default path: /tmp/Rte/loss_curve_all_nodes.tsv
 """
 
 import sys
@@ -17,7 +17,7 @@ FIGURES_DIR = os.path.join(SCRIPT_DIR, "figures")
 
 
 def main():
-    default_path = "/tmp/RTE/loss_curve_all_nodes_2b.tsv"
+    default_path = "/tmp/RTE/loss_curve_all_nodes.tsv"
     path = sys.argv[1] if len(sys.argv) > 1 else default_path
 
     if not os.path.isfile(path):
