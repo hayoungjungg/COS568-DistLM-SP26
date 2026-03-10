@@ -23,7 +23,6 @@ import logging
 import os
 import random
 import time
-from contextlib import contextmanager
 
 import numpy as np
 import torch
@@ -188,106 +187,79 @@ def train(args, train_dataset, model, tokenizer):
             else:
                 loss_curve_all_file.write("batch\tloss\n")
 
-    # Task 4: Profiler for 3 training steps (skip first step). Chrome trace saved to output_dir.
-    use_profiler = (args.local_rank != -1) and args.output_dir
-    trace_path = os.path.join(args.output_dir, "chrome_trace_gather_scatter.json") if args.output_dir else None
+    for epoch in range(int(args.num_train_epochs)):
+        if args.local_rank != -1:
+            train_sampler.set_epoch(epoch)
+        epoch_iterator = tqdm(train_dataloader, desc="Iteration", disable=args.local_rank not in [-1, 0])
+        for step, batch in enumerate(epoch_iterator):
+            if step % args.gradient_accumulation_steps == 0:
+                t_iter_start = time.perf_counter()
+            model.train()
+            batch = tuple(t.to(args.device) for t in batch)
+            inputs = {'input_ids':      batch[0],
+                      'attention_mask': batch[1],
+                      'token_type_ids': batch[2] if args.model_type in ['bert', 'xlnet'] else None,  # XLM don't use segment_ids
+                      'labels':         batch[3]}
+            outputs = model(**inputs)
+            loss = outputs[0]  # model outputs are always tuple in pytorch-transformers (see doc)
 
-    @contextmanager
-    def _optional_profiler():
-        if use_profiler:
-            schedule = torch.profiler.schedule(skip_first=1, wait=0, warmup=0, active=3, repeat=0)
-            def _on_trace_ready(p):
-                if args.local_rank == 0:
-                    p.export_chrome_trace(trace_path)
-                    logger.info("Exported chrome trace to %s", trace_path)
-            with torch.profiler.profile(
-                schedule=schedule,
-                on_trace_ready=_on_trace_ready,
-                record_shapes=True,
-                activities=[torch.profiler.ProfilerActivity.CPU],
-            ) as prof:
-                yield prof
-        else:
-            class _NoopProfiler:
-                def step(self): pass
-            yield _NoopProfiler()
+            if args.gradient_accumulation_steps > 1:
+                loss = loss / args.gradient_accumulation_steps
 
-    with _optional_profiler() as prof:
-        for epoch in range(int(args.num_train_epochs)):
+            if step < 5:
+                print("Minibatch {} loss: {}".format(step + 1, loss.item()))
+
+            if args.fp16:
+                with amp.scale_loss(loss, optimizer) as scaled_loss:
+                    scaled_loss.backward()
+                torch.nn.utils.clip_grad_norm_(amp.master_params(optimizer), args.max_grad_norm)
+            else:
+                ##################################################
+                # TODO(cos568): perform backward pass here (expect one line of code)
+                loss.backward()
+                ##################################################
+
+            # Part 2a: Aggregate gradients across all ranks, then clip the synced gradient (distributed only)
             if args.local_rank != -1:
-                train_sampler.set_epoch(epoch)
-            epoch_iterator = tqdm(train_dataloader, desc="Iteration", disable=args.local_rank not in [-1, 0])
-            for step, batch in enumerate(epoch_iterator):
-                if step % args.gradient_accumulation_steps == 0:
-                    t_iter_start = time.perf_counter()
-                model.train()
-                batch = tuple(t.to(args.device) for t in batch)
-                inputs = {'input_ids':      batch[0],
-                          'attention_mask': batch[1],
-                          'token_type_ids': batch[2] if args.model_type in ['bert', 'xlnet'] else None,  # XLM don't use segment_ids
-                          'labels':         batch[3]}
-                outputs = model(**inputs)
-                loss = outputs[0]  # model outputs are always tuple in pytorch-transformers (see doc)
+                aggregate_gradients(model, args.local_rank, args.world_size)
+            torch.nn.utils.clip_grad_norm_(model.parameters(), args.max_grad_norm)
 
-                if args.gradient_accumulation_steps > 1:
-                    loss = loss / args.gradient_accumulation_steps
-
-                if step < 5:
-                    print("Minibatch {} loss: {}".format(step + 1, loss.item()))
-
-                if args.fp16:
-                    with amp.scale_loss(loss, optimizer) as scaled_loss:
-                        scaled_loss.backward()
-                    torch.nn.utils.clip_grad_norm_(amp.master_params(optimizer), args.max_grad_norm)
-                else:
-                    ##################################################
-                    # TODO(cos568): perform backward pass here (expect one line of code)
-                    loss.backward()
-                    ##################################################
-
-                # Part 2a: Aggregate gradients across all ranks, then clip the synced gradient (distributed only)
+            tr_loss += loss.item()
+            if loss_curve_file is not None:
+                batch_counter += 1
+                loss_curve_file.write("{}\t{:.6f}\n".format(batch_counter, loss.item()))
+                # In distributed mode, gather all nodes' losses so rank 0 can log all four in one file
                 if args.local_rank != -1:
-                    aggregate_gradients(model, args.local_rank, args.world_size)
-                torch.nn.utils.clip_grad_norm_(model.parameters(), args.max_grad_norm)
+                    loss_t = torch.tensor([loss.item()], dtype=torch.float64)
+                    gathered = [torch.zeros(1, dtype=torch.float64) for _ in range(args.world_size)]
+                    dist.all_gather(gathered, loss_t)
+                    if loss_curve_all_file is not None:
+                        loss_curve_all_file.write("{}\t".format(batch_counter) + "\t".join("{:.6f}".format(g.item()) for g in gathered) + "\n")
+                elif loss_curve_all_file is not None:
+                    loss_curve_all_file.write("{}\t{:.6f}\n".format(batch_counter, loss.item()))
+            if (step + 1) % args.gradient_accumulation_steps == 0:
+                ##################################################
+                # TODO(cos568): perform a single optimization step (parameter update) by invoking the optimizer (expect one line of code)
+                optimizer.step()
+                ##################################################
+                elapsed = time.perf_counter() - t_iter_start
+                # Discard first iteration only (global_step is 0 for the first optimizer step)
+                if global_step >= 1:
+                    iteration_times.append(elapsed)
+                scheduler.step()  # Update learning rate schedule
+                model.zero_grad()
+                global_step += 1
 
-                tr_loss += loss.item()
-                if loss_curve_file is not None:
-                    batch_counter += 1
-                    loss_curve_file.write("{}\t{:.6f}\n".format(batch_counter, loss.item()))
-                    # In distributed mode, gather all nodes' losses so rank 0 can log all four in one file
-                    if args.local_rank != -1:
-                        loss_t = torch.tensor([loss.item()], dtype=torch.float64)
-                        gathered = [torch.zeros(1, dtype=torch.float64) for _ in range(args.world_size)]
-                        dist.all_gather(gathered, loss_t)
-                        if loss_curve_all_file is not None:
-                            loss_curve_all_file.write("{}\t".format(batch_counter) + "\t".join("{:.6f}".format(g.item()) for g in gathered) + "\n")
-                    elif loss_curve_all_file is not None:
-                        loss_curve_all_file.write("{}\t{:.6f}\n".format(batch_counter, loss.item()))
-                if (step + 1) % args.gradient_accumulation_steps == 0:
-                    ##################################################
-                    # TODO(cos568): perform a single optimization step (parameter update) by invoking the optimizer (expect one line of code)
-                    optimizer.step()
-                    ##################################################
-                    elapsed = time.perf_counter() - t_iter_start
-                    # Discard first iteration only (global_step is 0 for the first optimizer step)
-                    if global_step >= 1:
-                        iteration_times.append(elapsed)
-                    scheduler.step()  # Update learning rate schedule
-                    model.zero_grad()
-                    global_step += 1
-                    # Task 4: advance profiler each training step (skip first, record next 3)
-                    prof.step()
-
-                if args.max_steps > 0 and global_step > args.max_steps:
-                    epoch_iterator.close()
-                    break
             if args.max_steps > 0 and global_step > args.max_steps:
+                epoch_iterator.close()
                 break
+        if args.max_steps > 0 and global_step > args.max_steps:
+            break
 
-            ##################################################
-            # TODO(cos568): call evaluate() here to get the model performance after every epoch. (expect one line of code)
-            evaluate(args, model, tokenizer, prefix="epoch-num-{}".format(epoch + 1))
-            ##################################################
+        ##################################################
+        # TODO(cos568): call evaluate() here to get the model performance after every epoch. (expect one line of code)
+        evaluate(args, model, tokenizer, prefix="epoch-num-{}".format(epoch + 1))
+        ##################################################
 
     if loss_curve_file is not None:
         loss_curve_file.close()

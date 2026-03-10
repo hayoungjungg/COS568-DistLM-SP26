@@ -31,6 +31,7 @@ from torch.utils.data import (DataLoader, RandomSampler, SequentialSampler,
                               TensorDataset)
 from torch.utils.data.distributed import DistributedSampler
 import torch.distributed as dist
+from torch.nn.parallel import DistributedDataParallel
 from tqdm import tqdm, trange
 
 # import a previous version of the HuggingFace Transformers package
@@ -92,33 +93,6 @@ def setup_distributed(args):
         rank=args.local_rank,
     )
     args.rank = args.local_rank
-
-
-def aggregate_gradients(model, rank, world_size):
-    """
-    Synchronize gradients using gather/scatter: rank 0 gathers grads from all
-    workers, computes element-wise mean, then scatters the mean back to all.
-    Each worker updates param.grad with the received vector.
-    """
-    for param in model.parameters():
-        if param.grad is not None:
-            # Rank 0 allocates buffer to receive from all ranks
-            gather_list = None
-            if rank == 0:
-                # creating four empty tensors with the same size as param.grad
-                gather_list = [torch.empty_like(param.grad) for _ in range(world_size)]
-
-            # All workers send their grad to rank 0
-            dist.gather(param.grad, gather_list, dst=0)
-
-            scatter_list = None
-            if rank == 0:
-                # Element-wise average, creating a list of world_size tensors with the same size as param.grad
-                averaged = torch.stack(gather_list, dim=0).mean(dim=0)
-                scatter_list = [averaged.clone() for _ in range(world_size)]
-
-            # Rank 0 sends the mean grad to each worker; each rank's param.grad is updated in-place with the received vector
-            dist.scatter(param.grad, scatter_list, src=0)
 
 
 def train(args, train_dataset, model, tokenizer):
@@ -190,7 +164,7 @@ def train(args, train_dataset, model, tokenizer):
 
     # Task 4: Profiler for 3 training steps (skip first step). Chrome trace saved to output_dir.
     use_profiler = (args.local_rank != -1) and args.output_dir
-    trace_path = os.path.join(args.output_dir, "chrome_trace_gather_scatter.json") if args.output_dir else None
+    trace_path = os.path.join(args.output_dir, "chrome_trace_ddp.json") if args.output_dir else None
 
     @contextmanager
     def _optional_profiler():
@@ -245,9 +219,7 @@ def train(args, train_dataset, model, tokenizer):
                     loss.backward()
                     ##################################################
 
-                # Part 2a: Aggregate gradients across all ranks, then clip the synced gradient (distributed only)
-                if args.local_rank != -1:
-                    aggregate_gradients(model, args.local_rank, args.world_size)
+                # Part 3: DDP synchronizes gradients automatically during backward(); no manual all_reduce.
                 torch.nn.utils.clip_grad_norm_(model.parameters(), args.max_grad_norm)
 
                 tr_loss += loss.item()
@@ -549,6 +521,10 @@ def main():
         torch.distributed.barrier()  # Make sure only the first process in distributed training will download model & vocab
 
     model.to(args.device)
+
+    # Part 3: Register model with DistributedDataParallel for automatic gradient synchronization.
+    if args.local_rank != -1:
+        model = DistributedDataParallel(model)
 
     logger.info("Training/evaluation parameters %s", args)
 
