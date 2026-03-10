@@ -180,7 +180,8 @@ def train(args, train_dataset, model, tokenizer):
             with torch.profiler.profile(
                 schedule=schedule,
                 on_trace_ready=_on_trace_ready,
-                record_shapes=False,  # avoid huge traces and JSON-breaking strings
+                record_shapes=False,
+                with_stack=False,
                 activities=[torch.profiler.ProfilerActivity.CPU],
             ) as prof:
                 yield prof
