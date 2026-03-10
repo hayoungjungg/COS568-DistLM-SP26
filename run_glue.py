@@ -94,16 +94,31 @@ def setup_distributed(args):
     args.rank = args.local_rank
 
 
-def aggregate_gradients(model, world_size):
+def aggregate_gradients(model, rank, world_size):
     """
-    Synchronize gradients using all_reduce (Part 2b) 
+    Synchronize gradients using gather/scatter: rank 0 gathers grads from all
+    workers, computes element-wise mean, then scatters the mean back to all.
+    Each worker updates param.grad with the received vector.
     """
     for param in model.parameters():
         if param.grad is not None:
-            # Sum gradients across all workers (all_reduce is in-place; all ranks get the sum)
-            dist.all_reduce(param.grad, op=dist.ReduceOp.SUM)
-            # PyTorch all_reduce has no "average" mode; divide by world_size to get mean
-            param.grad.div_(world_size)
+            # Rank 0 allocates buffer to receive from all ranks
+            gather_list = None
+            if rank == 0:
+                # creating four empty tensors with the same size as param.grad
+                gather_list = [torch.empty_like(param.grad) for _ in range(world_size)]
+
+            # All workers send their grad to rank 0
+            dist.gather(param.grad, gather_list, dst=0)
+
+            scatter_list = None
+            if rank == 0:
+                # Element-wise average, creating a list of world_size tensors with the same size as param.grad
+                averaged = torch.stack(gather_list, dim=0).mean(dim=0)
+                scatter_list = [averaged.clone() for _ in range(world_size)]
+
+            # Rank 0 sends the mean grad to each worker; each rank's param.grad is updated in-place with the received vector
+            dist.scatter(param.grad, scatter_list, src=0)
 
 
 def train(args, train_dataset, model, tokenizer):
@@ -176,8 +191,8 @@ def train(args, train_dataset, model, tokenizer):
     # Task 4: Profiler for 3 training steps (skip first step). Chrome trace saved under task4/.
     use_profiler = (args.local_rank != -1) and args.output_dir
     _script_dir = os.path.dirname(os.path.abspath(__file__))
-    _profiler_dir = _script_dir  # script is in task4/, save traces here
-    trace_path = os.path.join(_profiler_dir, "chrome_trace_all_reduce.json") if args.output_dir else None
+    _profiler_dir = os.path.join(_script_dir, "task4")
+    trace_path = os.path.join(_profiler_dir, "chrome_trace_gather_scatter.json") if args.output_dir else None
 
     @contextmanager
     def _optional_profiler():
@@ -191,7 +206,7 @@ def train(args, train_dataset, model, tokenizer):
             with torch.profiler.profile(
                 schedule=schedule,
                 on_trace_ready=_on_trace_ready,
-                record_shapes=True,
+                record_shapes=False,  # avoid huge traces and JSON-breaking strings
                 activities=[torch.profiler.ProfilerActivity.CPU],
             ) as prof:
                 yield prof
@@ -233,9 +248,9 @@ def train(args, train_dataset, model, tokenizer):
                     loss.backward()
                     ##################################################
 
-                # Part 2b: Aggregate gradients using all_reduce (sum then average), then clip (distributed only)
+                # Part 2a: Aggregate gradients across all ranks, then clip the synced gradient (distributed only)
                 if args.local_rank != -1:
-                    aggregate_gradients(model, args.world_size)
+                    aggregate_gradients(model, args.local_rank, args.world_size)
                 torch.nn.utils.clip_grad_norm_(model.parameters(), args.max_grad_norm)
 
                 tr_loss += loss.item()
@@ -263,8 +278,9 @@ def train(args, train_dataset, model, tokenizer):
                     scheduler.step()  # Update learning rate schedule
                     model.zero_grad()
                     global_step += 1
-                    # Task 4: advance profiler each training step (skip first, record next 3)
-                    prof.step()
+                    # Task 4: advance profiler only for first 4 steps (skip 0, record 1,2,3) so trace shows ProfilerStep#1,#2,#3
+                    if use_profiler and global_step <= 4:
+                        prof.step()
 
                 if args.max_steps > 0 and global_step > args.max_steps:
                     epoch_iterator.close()

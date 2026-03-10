@@ -180,7 +180,7 @@ def train(args, train_dataset, model, tokenizer):
             with torch.profiler.profile(
                 schedule=schedule,
                 on_trace_ready=_on_trace_ready,
-                record_shapes=True,
+                record_shapes=False,  # avoid huge traces and JSON-breaking strings
                 activities=[torch.profiler.ProfilerActivity.CPU],
             ) as prof:
                 yield prof
@@ -250,8 +250,9 @@ def train(args, train_dataset, model, tokenizer):
                     scheduler.step()  # Update learning rate schedule
                     model.zero_grad()
                     global_step += 1
-                    # Task 4: advance profiler each training step (skip first, record next 3)
-                    prof.step()
+                    # Task 4: advance profiler only for first 4 steps (skip 0, record 1,2,3) so trace shows ProfilerStep#1,#2,#3
+                    if use_profiler and global_step <= 4:
+                        prof.step()
 
                 if args.max_steps > 0 and global_step > args.max_steps:
                     epoch_iterator.close()
