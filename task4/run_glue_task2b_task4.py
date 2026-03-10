@@ -173,13 +173,16 @@ def train(args, train_dataset, model, tokenizer):
             else:
                 loss_curve_all_file.write("batch\tloss\n")
 
-    # Task 4: Profiler for 3 training steps (skip first step). Chrome trace saved to output_dir.
+    # Task 4: Profiler for 3 training steps (skip first step). Chrome trace saved under task4/.
     use_profiler = (args.local_rank != -1) and args.output_dir
-    trace_path = os.path.join(args.output_dir, "chrome_trace_all_reduce.json") if args.output_dir else None
+    _script_dir = os.path.dirname(os.path.abspath(__file__))
+    _profiler_dir = _script_dir  # script is in task4/, save traces here
+    trace_path = os.path.join(_profiler_dir, "chrome_trace_all_reduce.json") if args.output_dir else None
 
     @contextmanager
     def _optional_profiler():
         if use_profiler:
+            os.makedirs(_profiler_dir, exist_ok=True)
             schedule = torch.profiler.schedule(skip_first=1, wait=0, warmup=0, active=3, repeat=0)
             def _on_trace_ready(p):
                 if args.local_rank == 0:
