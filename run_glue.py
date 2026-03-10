@@ -31,6 +31,7 @@ from torch.utils.data import (DataLoader, RandomSampler, SequentialSampler,
                               TensorDataset)
 from torch.utils.data.distributed import DistributedSampler
 import torch.distributed as dist
+from torch.nn.parallel import DistributedDataParallel
 from tqdm import tqdm, trange
 
 # import a previous version of the HuggingFace Transformers package
@@ -92,18 +93,6 @@ def setup_distributed(args):
         rank=args.local_rank,
     )
     args.rank = args.local_rank
-
-
-def aggregate_gradients(model, world_size):
-    """
-    Synchronize gradients using all_reduce (Part 2b) 
-    """
-    for param in model.parameters():
-        if param.grad is not None:
-            # Sum gradients across all workers (all_reduce is in-place; all ranks get the sum)
-            dist.all_reduce(param.grad, op=dist.ReduceOp.SUM)
-            # PyTorch all_reduce has no "average" mode; divide by world_size to get mean
-            param.grad.div_(world_size)
 
 
 def train(args, train_dataset, model, tokenizer):
@@ -177,7 +166,7 @@ def train(args, train_dataset, model, tokenizer):
     use_profiler = (args.local_rank != -1) and args.output_dir
     _script_dir = os.path.dirname(os.path.abspath(__file__))
     _profiler_dir = _script_dir  # script is in task4/, save traces here
-    trace_path = os.path.join(_profiler_dir, "chrome_trace_all_reduce.json") if args.output_dir else None
+    trace_path = os.path.join(_profiler_dir, "chrome_trace_ddp.json") if args.output_dir else None
 
     @contextmanager
     def _optional_profiler():
@@ -234,9 +223,7 @@ def train(args, train_dataset, model, tokenizer):
                     loss.backward()
                     ##################################################
 
-                # Part 2b: Aggregate gradients using all_reduce (sum then average), then clip (distributed only)
-                if args.local_rank != -1:
-                    aggregate_gradients(model, args.world_size)
+                # Part 3: DDP synchronizes gradients automatically during backward(); no manual all_reduce.
                 torch.nn.utils.clip_grad_norm_(model.parameters(), args.max_grad_norm)
 
                 tr_loss += loss.item()
@@ -539,6 +526,10 @@ def main():
         torch.distributed.barrier()  # Make sure only the first process in distributed training will download model & vocab
 
     model.to(args.device)
+
+    # Part 3: Register model with DistributedDataParallel for automatic gradient synchronization.
+    if args.local_rank != -1:
+        model = DistributedDataParallel(model)
 
     logger.info("Training/evaluation parameters %s", args)
 
